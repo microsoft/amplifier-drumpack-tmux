@@ -1,0 +1,14 @@
+# The pack-private virtualenv is a build artifact -- each checkout builds its
+# own (see README.md). The shim refuses with the rebuild command if it is
+# missing; it is never committed.
+.venv/
+
+# Python bytecode / test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# The tool's runtime state, should a verb ever be run from inside this repo.
+# Reads never touch it; write verbs (send/create) append here by default.
+# (default lives at ~/.local/state/tmux-fleet/, but guard against overrides.)
+input-audit.jsonl

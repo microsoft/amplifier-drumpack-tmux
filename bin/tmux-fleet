@@ -1,0 +1,126 @@
+#!/bin/sh
+# tmux-fleet -- launcher shim for the tmux-fleet smart tool.
+#
+# This file is the drumpack's ENTIRE bin/ surface, and it is bootstrap ONLY
+# (VISION section 1: logic here beyond environment bootstrap is a defect --
+# it would be capability the tool's other consumers cannot reach). It does
+# exactly three things: (1) locate the pack-private venv the smart tool was
+# installed into, (2) confirm the environment a work verb needs, and (3) exec
+# into the real CLI (`tmux_fleet.cli:main`). It never falls back to an ambient
+# `python3`, never runs `tmux` itself, and NEVER provisions a venv mid-turn:
+# a tool that silently provisions itself is a fallback wearing a helpful face
+# (VISION section 4). Every broken precondition is a loud refusal that names
+# the exact remedy command.
+#
+# POSIX sh on purpose: the shim must be able to fail loud about a missing
+# interpreter without needing an interpreter first.
+
+set -eu
+
+# --- 1. Resolve the pack root (the directory that holds bin/ and .venv/) ------
+# Resolve symlinks by hand so the shim works whether it is called directly, via
+# a symlink on PATH, or through the engine's turn PATH.
+SELF="$0"
+while [ -h "$SELF" ]; do
+    _link=$(readlink "$SELF")
+    case "$_link" in
+        /*) SELF="$_link" ;;
+        *)  SELF="$(dirname "$SELF")/$_link" ;;
+    esac
+done
+BIN_DIR=$(cd "$(dirname "$SELF")" && pwd -P)
+PACK_ROOT=$(cd "$BIN_DIR/.." && pwd -P)
+
+VENV_DIR="$PACK_ROOT/.venv"
+VENV_PY="$VENV_DIR/bin/python"
+
+# --- 2. The pack-private venv must exist -------------------------------------
+# The plumbing dependency (tmux-kit) is not on the engine's base PATH, so the
+# tool lives in a pack-private venv and the shim execs THAT interpreter, never
+# whatever `python3` the turn PATH happens to resolve to.
+if [ ! -x "$VENV_PY" ]; then
+    cat >&2 <<EOF
+tmux-fleet: this drumpack's private virtualenv is missing (expected an
+interpreter at $VENV_PY).
+
+The shim will NOT build one mid-turn. Build it once (installs the smart tool
+into $VENV_DIR):
+
+  uv venv "$VENV_DIR"
+  uv pip install --python "$VENV_PY" \\
+    git+https://github.com/bkrabach/amplifier-smart-tool-tmux
+
+For a local checkout, replace the git URL with:
+  git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux
+
+See $PACK_ROOT/README.md for the full install story.
+EOF
+    exit 69
+fi
+
+# --- 3. A work verb needs tmux; the tool's own diagnostics do not -------------
+# `tmux` is a runtime prerequisite of every verb that talks to a live server.
+# The shim fails those loud with a remedy rather than letting them proceed into
+# a broken environment. It deliberately does NOT gate `--help`/`-h` or `doctor`
+# (or a bare invocation): those exist PRECISELY to run in a tmux-less or broken
+# environment -- `doctor` reports tmux's absence, and `--help` must always work
+# (tmux-fleet cli.v1 rule 1). Blocking them here would make the tool's own
+# diagnostics unreachable. If the tool ever grows another verb that must run
+# without tmux, add it to the exemption below.
+needs_tmux=1
+[ "$#" -eq 0 ] && needs_tmux=0
+_verb=""
+for _a in "$@"; do
+    case "$_a" in
+        -h|--help) needs_tmux=0 ;;
+        -*) : ;;                       # any other option: keep scanning
+        *) [ -z "$_verb" ] && _verb="$_a" ;;
+    esac
+done
+case "$_verb" in
+    doctor) needs_tmux=0 ;;
+esac
+
+if [ "$needs_tmux" -eq 1 ] && ! command -v tmux >/dev/null 2>&1; then
+    cat >&2 <<EOF
+tmux-fleet: \`tmux\` is not on PATH. This tool is a tmux client and cannot run
+a work verb without it -- it will not degrade to a guess.
+
+Install tmux, then retry:
+  Debian/Ubuntu:  sudo apt-get install tmux
+  Fedora:         sudo dnf install tmux
+  macOS:          brew install tmux
+
+(\`tmux-fleet doctor\` and \`tmux-fleet --help\` run without tmux and will tell
+you more.)
+EOF
+    exit 69
+fi
+
+# --- 4. Exec into the real CLI, with a loud remedy if the import fails --------
+# One interpreter start. The guard reports a broken/incomplete venv with the
+# exact rebuild command instead of a bare Python traceback, and pins argv[0] so
+# the tool's own usage/errors read as `tmux-fleet`, not `-c`.
+TMUXFLEET_SHIM_IMPORT_REMEDY="tmux-fleet: the pack-private venv at $VENV_DIR is
+present but the smart tool failed to import. The venv is broken or incomplete
+-- rebuild it:
+
+  rm -rf \"$VENV_DIR\"
+  uv venv \"$VENV_DIR\"
+  uv pip install --python \"$VENV_PY\" git+https://github.com/bkrabach/amplifier-smart-tool-tmux
+
+(For a local checkout use git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux;
+see $PACK_ROOT/README.md.)"
+export TMUXFLEET_SHIM_IMPORT_REMEDY
+
+exec "$VENV_PY" -c '
+import os, sys
+sys.argv[0] = "tmux-fleet"
+try:
+    from tmux_fleet.cli import main
+except BaseException as exc:  # noqa: BLE001 -- any import failure gets the remedy
+    sys.stderr.write(os.environ["TMUXFLEET_SHIM_IMPORT_REMEDY"].rstrip() + "\n")
+    sys.stderr.write("underlying error: %r\n" % (exc,))
+    sys.exit(70)
+sys.exit(main())
+' "$@"
