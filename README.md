@@ -41,6 +41,12 @@ The deterministic verbs need none of it; only `triage` and `interpret` do.
   `uv tool install git+https://github.com/microsoft/amplifier-agent`, then
   `amplifier-agent auth`.
 
+> **Provider SDK gotcha:** `uv tool install` pulls `amplifier-core` but **not**
+> provider SDKs — add your provider, e.g. `--with anthropic`, or the model-backed
+> verbs will fail with `No module named 'anthropic'`:
+> `uv tool install --with anthropic git+https://github.com/microsoft/amplifier-agent`
+
+
 ### Consumers
 
 ```sh

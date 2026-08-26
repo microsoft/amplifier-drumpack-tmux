@@ -99,11 +99,13 @@ no sessions" and "this tool is pointed at the wrong socket" look identical
 from the outside, and `socket` is what tells them apart without running a
 listing whose emptiness is the thing in doubt.
 
-**stdout is always one JSON document.** Errors and refusals go to stderr and
-never to stdout, and the exit code carries the distinction: `0` success, `2`
-refusal (unconfirmed write, unknown session, argument over a cap), `1`
-read/agent failure (no tmux, tmux errored, or the substrate a smart verb
-needs was unavailable).
+**stdout is always one JSON document — including failures.** A failure or
+refusal emits a JSON error envelope `{"error": {"code","message","remedy"}}`
+on stdout too; only progress/diagnostics (none in normal operation) go to
+stderr. The exit code carries the distinction: `0` success, `2` refusal
+(unconfirmed write, unknown session, argument over a cap), `1` read/agent
+failure (no tmux, tmux errored, or the substrate a smart verb needs was
+unavailable).
 
 ### Two verbs are model-backed; the other eight are not
 
