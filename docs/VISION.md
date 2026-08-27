@@ -18,7 +18,7 @@ confirmation, act on it.
 ### 1. Exposure, not capability
 
 Every capability lives in the smart tool
-([amplifier-smart-tool-tmux](https://github.com/bkrabach/amplifier-smart-tool-tmux));
+([amplifier-smart-tool-tmux](https://github.com/microsoft/amplifier-smart-tool-tmux));
 this pack ships a card, a launcher shim, and an automation exemplar — nothing
 else. Logic found in this repo's `bin/` beyond environment bootstrap is a
 defect: it is capability the tool's other consumers cannot reach.

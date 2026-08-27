@@ -48,7 +48,7 @@ into $VENV_DIR):
 
   uv venv "$VENV_DIR"
   uv pip install --python "$VENV_PY" \\
-    git+https://github.com/bkrabach/amplifier-smart-tool-tmux
+    git+https://github.com/microsoft/amplifier-smart-tool-tmux
 
 For a local checkout, replace the git URL with:
   git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux
@@ -107,7 +107,7 @@ present but the smart tool failed to import. The venv is broken or incomplete
 
   rm -rf \"$VENV_DIR\"
   uv venv \"$VENV_DIR\"
-  uv pip install --python \"$VENV_PY\" git+https://github.com/bkrabach/amplifier-smart-tool-tmux
+  uv pip install --python \"$VENV_PY\" git+https://github.com/microsoft/amplifier-smart-tool-tmux
 
 (For a local checkout use git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux;
 see $PACK_ROOT/README.md.)"
