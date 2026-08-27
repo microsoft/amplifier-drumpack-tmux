@@ -48,10 +48,12 @@ into $VENV_DIR):
 
   uv venv "$VENV_DIR"
   uv pip install --python "$VENV_PY" \\
-    git+https://github.com/microsoft/amplifier-smart-tool-tmux
+    "tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux"
 
-For a local checkout, replace the git URL with:
-  git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux
+The [anthropic] extra installs the provider SDK the two smart verbs (triage,
+interpret) need; swap it for [openai], or drop the extra entirely if you only
+want the deterministic verbs. For a local checkout, replace the git URL with:
+  "tmux-fleet[anthropic] @ git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux"
 
 See $PACK_ROOT/README.md for the full install story.
 EOF
@@ -107,9 +109,11 @@ present but the smart tool failed to import. The venv is broken or incomplete
 
   rm -rf \"$VENV_DIR\"
   uv venv \"$VENV_DIR\"
-  uv pip install --python \"$VENV_PY\" git+https://github.com/microsoft/amplifier-smart-tool-tmux
+  uv pip install --python \"$VENV_PY\" \"tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux\"
 
-(For a local checkout use git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux;
+(The [anthropic] extra installs the provider SDK the smart verbs need; use
+[openai] instead, or drop the extra for the deterministic verbs only. For a
+local checkout use \"tmux-fleet[anthropic] @ git+file:///ABSOLUTE/PATH/TO/amplifier-smart-tool-tmux\";
 see $PACK_ROOT/README.md.)"
 export TMUXFLEET_SHIM_IMPORT_REMEDY
 

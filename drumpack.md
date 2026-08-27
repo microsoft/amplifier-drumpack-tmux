@@ -29,7 +29,7 @@ description: >
 tools:
   - name: tmux-fleet
     bin: bin/tmux-fleet
-    description: "Observe the local tmux fleet read-only (sessions, idleness, panes, scrollback), triage/interpret it through amplifier-agent, and -- only under an explicit per-invocation --confirmed -- send input or create a session. No verb kills or renames."
+    description: "Observe the local tmux fleet read-only (sessions, idleness, panes, scrollback), triage/interpret it through the embedded amplifier-agent engine (a provider SDK extra + provider credentials in the environment; no binary on PATH), and -- only under an explicit per-invocation --confirmed -- send input or create a session. No verb kills or renames."
 ---
 
 # Tools in this pack
@@ -48,25 +48,35 @@ cannot: the judgment and the safety context.
 **What this pack assumes is on PATH beyond the engine's pinned base list:**
 `tmux`. The tool is a tmux client and exits non-zero naming it when it is
 absent -- it never degrades to a guess. It also carries a **pack-private
-venv** (`.venv/` at the pack root) because its plumbing dependency,
-[tmux-kit](https://github.com/bkrabach/tmux-kit), is not in the base list;
-`bin/tmux-fleet` execs that interpreter rather than whatever `python3` the
-turn PATH happens to resolve to. If the venv is missing the shim exits
+venv** (`.venv/` at the pack root) because its dependencies -- the
+[tmux-kit](https://github.com/bkrabach/tmux-kit) plumbing and the embedded
+amplifier-agent engine that backs the two smart verbs -- are not in the base
+list; `bin/tmux-fleet` execs that interpreter rather than whatever `python3`
+the turn PATH happens to resolve to. If the venv is missing the shim exits
 non-zero and prints the one command that builds it. It will not build one
 mid-turn: a tool that silently provisions itself is a fallback wearing a
 helpful face.
 
-**The AI substrate is a shared machine service, not a dependency of this
-pack.** The two model-backed verbs (`triage`, `interpret`) execute through
-`amplifier-agent`, which is expected already installed and configured on the
-machine's PATH. Configure it once and every smart tool on the machine shares
-it; the eight deterministic verbs need none of it and run with no substrate
-configured at all. Invoked without a working `amplifier-agent`, a smart verb
-**fails saying exactly that and how to configure it** -- never a silent
-fallback to a deterministic approximation.
+**The AI substrate is the amplifier-agent engine, embedded in the
+pack-private venv -- not a binary on PATH.** The two model-backed verbs
+(`triage`, `interpret`) import that engine library in-process; it ships as a
+regular dependency of the tool, so building the venv already installs it --
+there is nothing to put on PATH and nothing to configure as a shared machine
+service. What a smart verb additionally needs is a **provider**: the tool
+installed with the matching provider extra (e.g. `tmux-fleet[anthropic]`, or
+`[openai]`) so the provider SDK is present, plus that provider's credentials
+in the environment (e.g. `ANTHROPIC_API_KEY`). The eight deterministic verbs
+need none of it and run with no provider at all. Invoked without a usable
+provider, a smart verb **fails naming exactly which precondition is missing --
+the provider extra is not installed, no provider is configured, or no
+credentials are in the environment -- and how to fix it** (amended `cli.v1`
+rule 3), never a silent fallback to a deterministic approximation.
 
-**Credentials:** none. This pack talks to the local tmux server over its own
-socket as the invoking user. There is no token and nothing to rotate. It
+**Credentials:** none for the tmux surface -- this pack talks to the local
+tmux server over its own socket as the invoking user, with no token and
+nothing to rotate. The only credentials that ever matter are the provider API
+key the two smart verbs read straight from the environment (above); the tool
+carries none of its own, so there is still nothing in this pack to rotate. It
 reads no configuration file unless a deployment creates one -- see
 [Advanced: choosing the tmux socket](#advanced-choosing-the-tmux-socket),
 which normal use never needs.

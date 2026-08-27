@@ -26,25 +26,27 @@ The tool is **not vendored** -- it is a dependency installed into a
 interpreter and refuses, with the exact rebuild command, if it is missing. It
 never provisions the venv for you mid-turn.
 
-The smart tool's plumbing dependency (tmux-kit) is not on the engine's base
-PATH, which is the whole reason for the private venv. Building it also pulls
-the `amplifier-agent-py` SDK, but **not** the `amplifier-agent` engine binary:
-that is a shared machine service you install once and every smart tool reuses.
-The deterministic verbs need none of it; only `triage` and `interpret` do.
+The smart tool's dependencies -- the tmux-kit plumbing and the embedded
+amplifier-agent engine -- are not on the engine's base PATH, which is the whole
+reason for the private venv. Building the venv installs the engine
+automatically (it is a regular dependency of the tool); the two model-backed
+verbs (`triage`, `interpret`) import it in-process. There is no separate engine
+binary and no shared machine service. The deterministic verbs need nothing
+further; only `triage` and `interpret` need a provider (below).
 
 ### Prerequisites
 
 - [`uv`](https://docs.astral.sh/uv/) on PATH (builds the venv).
 - `tmux` on PATH (the tool is a tmux client).
-- `amplifier-agent` on PATH **only if** you want the model-backed verbs
-  (`triage`, `interpret`); install it once with
-  `uv tool install git+https://github.com/microsoft/amplifier-agent`, then
-  `amplifier-agent auth`.
-
-> **Provider SDK gotcha:** `uv tool install` pulls `amplifier-core` but **not**
-> provider SDKs — add your provider, e.g. `--with anthropic`, or the model-backed
-> verbs will fail with `No module named 'anthropic'`:
-> `uv tool install --with anthropic git+https://github.com/microsoft/amplifier-agent`
+- **Only for the model-backed verbs** (`triage`, `interpret`): build the venv
+  with a **provider extra** so its SDK is present (e.g. `tmux-fleet[anthropic]`,
+  or `[openai]` -- see the install commands below), and put that provider's
+  **credentials in the environment** (`export ANTHROPIC_API_KEY=...`, or
+  `OPENAI_API_KEY=...`). The tool stores none of its own. The eight
+  deterministic verbs need no provider at all; a smart verb invoked without one
+  fails loudly, naming the missing precondition (the provider extra is not
+  installed, no provider is configured, or no credentials are in the
+  environment).
 
 
 ### Consumers
@@ -53,8 +55,13 @@ The deterministic verbs need none of it; only `triage` and `interpret` do.
 cd /path/to/amplifier-drumpack-tmux
 uv venv .venv
 uv pip install --python .venv/bin/python \
-  git+https://github.com/microsoft/amplifier-smart-tool-tmux
+  "tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux"
 ```
+
+The `[anthropic]` extra pulls that provider's SDK for the model-backed verbs;
+use `[openai]` instead, or drop the extra (`"tmux-fleet @ git+..."`) if you only
+want the deterministic verbs. The engine itself comes in regardless -- it is a
+regular dependency of the tool.
 
 ### Development (install the tool from a local checkout)
 
@@ -62,7 +69,7 @@ uv pip install --python .venv/bin/python \
 cd /path/to/amplifier-drumpack-tmux
 uv venv .venv
 uv pip install --python .venv/bin/python \
-  git+file:///path/to/amplifier-smart-tool-tmux
+  "tmux-fleet[anthropic] @ git+file:///path/to/amplifier-smart-tool-tmux"
 ```
 
 Verify the shim resolves the tool:
