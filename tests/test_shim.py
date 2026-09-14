@@ -23,7 +23,11 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+README = REPO_ROOT / "README.md"
 SHIM_SRC = REPO_ROOT / "bin" / "tmux-fleet"
+PUBLISHED_TOOL_SOURCE = (
+    "git+https://github.com/microsoft/amplifier-smart-tool-tmux@v0.2.1"
+)
 
 # Every external command the shim invokes before it would exec the tool.
 # (``pwd``/``command``/``test`` are sh builtins; these are the externals.)
@@ -84,6 +88,22 @@ def test_shim_is_executable_and_valid_posix_sh() -> None:
     # `sh -n` parses without executing -- a syntax error here is a broken shim.
     proc = subprocess.run(["sh", "-n", str(SHIM_SRC)], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
+
+
+def test_active_install_references_pin_the_published_tool_tag() -> None:
+    """The README and both shim rebuild remedies install the same source tag."""
+    active_sources = {
+        "README consumer install": (README.read_text(), 1),
+        "shim venv remedies": (SHIM_SRC.read_text(), 2),
+    }
+
+    for surface, (text, expected_count) in active_sources.items():
+        assert text.count(PUBLISHED_TOOL_SOURCE) == expected_count, surface
+        assert (
+            "git+https://github.com/microsoft/amplifier-smart-tool-tmux\"" not in text
+        ), f"{surface} must not install an unpinned smart-tool source"
+
+    assert "`v0.1.0` source release is a GitHub tag/archive only" in README.read_text()
 
 
 def test_missing_venv_refuses_with_rebuild_remedy(tmp_path: Path) -> None:
