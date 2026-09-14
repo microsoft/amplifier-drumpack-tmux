@@ -48,7 +48,7 @@ into $VENV_DIR):
 
   uv venv "$VENV_DIR"
   uv pip install --python "$VENV_PY" \\
-    "tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux"
+    "tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux@v0.2.1"
 
 The [anthropic] extra installs the provider SDK the two smart verbs (triage,
 interpret) need; swap it for [openai], or drop the extra entirely if you only
@@ -109,7 +109,7 @@ present but the smart tool failed to import. The venv is broken or incomplete
 
   rm -rf \"$VENV_DIR\"
   uv venv \"$VENV_DIR\"
-  uv pip install --python \"$VENV_PY\" \"tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux\"
+  uv pip install --python \"$VENV_PY\" \"tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux@v0.2.1\"
 
 (The [anthropic] extra installs the provider SDK the smart verbs need; use
 [openai] instead, or drop the extra for the deterministic verbs only. For a

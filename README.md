@@ -21,6 +21,11 @@ docs/VISION.md              the end-state this repo converges toward
 
 ## Install
 
+This `v0.1.0` source release is a GitHub tag/archive only; the pack has no PyPI
+distribution. Each checkout installs the published `tmux-fleet` source pinned to
+`v0.2.1` below. To rebuild after changing or replacing a checkout, remove its
+private `.venv/` and repeat the matching install command.
+
 The tool is **not vendored** -- it is a dependency installed into a
 **pack-private virtualenv** (`.venv/` at the pack root). The shim execs that
 interpreter and refuses, with the exact rebuild command, if it is missing. It
@@ -55,7 +60,7 @@ further; only `triage` and `interpret` need a provider (below).
 cd /path/to/amplifier-drumpack-tmux
 uv venv .venv
 uv pip install --python .venv/bin/python \
-  "tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux"
+  "tmux-fleet[anthropic] @ git+https://github.com/microsoft/amplifier-smart-tool-tmux@v0.2.1"
 ```
 
 The `[anthropic]` extra pulls that provider's SDK for the model-backed verbs;
